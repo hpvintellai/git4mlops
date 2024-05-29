@@ -31,6 +31,34 @@ logger.addHandler(ch)
 def identity(batch):
    return batch
 
+def tqdm_generate(inputs: dict, task: str, return_timestamps: bool):
+    inputs_len = inputs["array"].shape[0]
+    all_chunk_start_idx = np.arange(0, inputs_len, step)
+    num_samples = len(all_chunk_start_idx)
+    num_batches = math.ceil(num_samples / BATCH_SIZE)
+
+    dataloader = pipeline.preprocess_batch(inputs, chunk_length_s=CHUNK_LENGTH_S, batch_size=BATCH_SIZE)
+    model_outputs = []
+    start_time = time.time()
+    logger.info("translating...")
+
+    for batch in dataloader:
+        model_outputs.append(pipeline.forward(batch, batch_size=BATCH_SIZE, task=task, return_timestamps=True))
+    runtime = time.time() - start_time
+    logger.info("done transcription")
+
+    logger.info("post-processing...")
+    post_processed = pipeline.postprocess(model_outputs, return_timestamps=True)
+    text = post_processed["text"]
+    if return_timestamps:
+        timestamps = post_processed.get("chunks")
+        timestamps = [
+            f"[{format_timestamp(chunk['timestamp'][0])} -> {format_timestamp(chunk['timestamp'][1])}] {chunk['text']}"
+            for chunk in timestamps
+        ]
+        text = "\n".join(str(feature) for feature in timestamps)
+    logger.info("done post-processing")
+    return text, runtime
 
 
 def transcribe_chunked_audio(inputs, task, return_timestamps):
