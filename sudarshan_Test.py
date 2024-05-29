@@ -11,6 +11,10 @@ from transformers.models.whisper.tokenization_whisper import TO_LANGUAGE_CODE
 from transformers.pipelines.audio_utils import ffmpeg_read
 
 from whisper_jax import FlaxWhisperPipline
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"]="false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]=".XX"
+os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"]="platform"
+
 
 cc.initialize_cache("./jax_cache")
 checkpoint = "openai/whisper-large-v3"
@@ -83,6 +87,7 @@ def transcribe_chunked_audio(inputs, task, return_timestamps):
    return text, runtime
 
 if __name__ == "__main__":
+   torch.cuda.empty_cache()
    pipeline = FlaxWhisperPipline(checkpoint, dtype=jnp.bfloat16, batch_size=BATCH_SIZE)
    stride_length_s = CHUNK_LENGTH_S / 6
    chunk_len = round(CHUNK_LENGTH_S * pipeline.feature_extractor.sampling_rate)
@@ -112,5 +117,6 @@ if __name__ == "__main__":
    # text, runtime = transcribe_chunked_audio(segments, sample_rate, task, return_timestamps)
    print(f"Transcription:\n{text}")
    print(f"Transcription Time (s): {runtime}")
+   torch.cuda.empty_cache()
 
 
