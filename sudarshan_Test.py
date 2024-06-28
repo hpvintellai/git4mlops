@@ -3,7 +3,7 @@ import math
 import os
 import tempfile
 import time
-
+import torch
 import jax.numpy as jnp
 import numpy as np
 from jax.experimental.compilation_cache import compilation_cache as cc
@@ -17,10 +17,10 @@ os.environ["XLA_PYTHON_CLIENT_ALLOCATOR"]="platform"
 
 
 cc.initialize_cache("./jax_cache")
+##checkpoint = "openai/whisper-large-v3"
 checkpoint = "openai/whisper-large-v3"
-
-BATCH_SIZE = 4
-CHUNK_LENGTH_S = 30
+BATCH_SIZE = 16
+CHUNK_LENGTH_S = 15
 NUM_PROC = 32
 FILE_LIMIT_MB = 1000
 

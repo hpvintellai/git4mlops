@@ -1,10 +1,40 @@
 from whisper_jax import FlaxWhisperPipline
 import jax.numpy as jnp
-# instantiate pipeline with batching
-pipeline = FlaxWhisperPipline("openai/whisper-large-v2",dtype = jnp.bfloat16, batch_size=16)
+import numpy as np
+import soundfile as sf
+import noisereduce as nr
+import soundfile as sf
+from pydub import AudioSegment
 
+# Load the audio file
+audio = AudioSegment.from_file("6621.wav", format="wav")
+print("Original dBFS:", audio.dBFS)
+
+# Increase the volume of the audio by 10 dB
+louder_audio = audio + 2
+
+# Save the final output to a new file
+louder_audio.export("output-1280.wav", format="wav")
+print("Modified dBFS:", louder_audio.dBFS)
+
+
+data, samplerate = sf.read('output-1280.wav')
+
+# Reduce noise
+y_reduced_noise = nr.reduce_noise(y=data, sr=samplerate)
+
+# Save the reduced noise audio
+sf.write('reduced_noise.wav', y_reduced_noise, samplerate)
+
+
+
+
+
+# instantiate pipelin
+pipeline = FlaxWhisperPipline("openai/whisper-large-v2",dtype = jnp.bfloat16, batch_size=32)
+#pipeline = FlaxWhisperPipline("microsoft/speecht5_asr")
 ### transcribe and return timestamps
-outputs = pipeline("amplified.wav",  task="translate", return_timestamps=True)
+outputs = pipeline("reduced_noise.wav",  task="translate", return_timestamps=True)
 text = outputs["text"]  # transcription
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TEXT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print(text)
@@ -12,10 +42,6 @@ print(text)
 chunks = outputs["chunks"]  # transcription + timestamps
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CHUNKS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
 print(chunks)
-
-
-
-
 
 
 
